@@ -14,6 +14,8 @@ public class GrassManager : MonoBehaviour
     private List<Material> cubeMList = new List<Material>();
     private List<int> soilList = new List<int>();
 
+    public int RanchSize { get { return ranchSize; } }
+
     void Start()
     {
         for (int x = 0; x < ranchSize; x++)
@@ -49,6 +51,7 @@ public class GrassManager : MonoBehaviour
         int z = Mathf.RoundToInt(position.z);
         int id = GetID(x, z);
         cubeMList[id].color = soilColor;
+        // 同じID２回入れられるかも。草生えてないのにGrazingできるかも
         soilList.Add(id);
     }
 

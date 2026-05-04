@@ -15,14 +15,14 @@ public class CreateCreature : MonoBehaviour
         newerID = 0; // GameMasterから入れて都度更新
     }
 
-    void CreateNewCreature(string name, CreatureInheritanceStatus inheritanceStatus, Action<CreatureInfo> action)
+    public void CreateNewCreature(string name, CreatureInheritanceStatus inheritanceStatus, Action<CreatureInfo> action)
     {
         newerID++;
         
-        CreatureInfo creatureInfo = new CreatureInfo(newerID, name, GetRandomStatus(inheritanceStatus));
-        GameObject creatureObject = Instantiate(prefab);
-        CreateGameObject(creatureInfo.Status.Color, creatureInfo.Status.Size);
-        action(creatureInfo);
+        CreatureInfo info = new CreatureInfo(newerID, name, GetRandomStatus(inheritanceStatus));
+        CreateGameObject(info);
+        // GameMaster から Callback を入れる
+        action(info);
     }
 
     CreatureStatus GetRandomStatus(CreatureInheritanceStatus inheritanceStatus)
@@ -35,34 +35,41 @@ public class CreateCreature : MonoBehaviour
         return new CreatureStatus(speed, appetite, inheritanceStatus);
     }
 
-    void MergeCreature(CreatureInfo parent1, CreatureInfo parent2, Action<CreatureInfo> action)
+    public void MergeCreature(CreatureInfo parent1, CreatureInfo parent2, Action<CreatureInfo> action)
     {
         newerID++;
         string name = parent1.Name + parent2.Name; // このままだと延々と名前が長くなる
+
         int speed = UnityEngine.Random.Range(0,5);
         int appetite = UnityEngine.Random.Range(0,5);
+        Color color = Color.Lerp(parent1.Status.Color, parent2.Status.Color, 0.5f);
+        int size = GetChildSize(parent1.Status.Size, parent2.Status.Size);
         // こういうただ平均取るだけのステータス他にも増えそうだから、
         // 配列にして各ステの名前配列も作りそれを参照表示するようにしてもいい（テーブル）
         int attackPoints = AveragePlusOne(parent1.Status.AttackPoints, parent2.Status.AttackPoints);
         int deffensePoints = AveragePlusOne(parent1.Status.DeffensePoints, parent2.Status.DeffensePoints);
-        Color color = Color.Lerp(parent1.Status.Color, parent2.Status.Color, 0.5f);
-        int size = GetChildSize(parent1.Status.Size, parent2.Status.Size);
+
         CreatureInheritanceStatus inheritanceStatus = new CreatureInheritanceStatus(color, size, attackPoints, deffensePoints);
         CreatureInfo creatureInfo = new CreatureInfo(newerID, name, new CreatureStatus(speed, appetite, inheritanceStatus));
-        CreateGameObject(color, size);
+        // Info は GameMasterに渡す
+        CreateGameObject(creatureInfo);
         action(creatureInfo);
     }
 
-    void CreateGameObject(Color c, int s)
+    void CreateGameObject(CreatureInfo info)
     {
-        GameObject creatureObject = Instantiate(prefab);
-        creatureObject.GetComponent<Material>().color = c;
-        creatureObject.transform.localScale = new Vector3(s, s, s);
+        GameObject obj = Instantiate(prefab);
+        obj.GetComponent<Material>().color = info.Status.Color;
+        float s = info.Status.Size;
+        obj.transform.localScale = new Vector3(s, s, s);
+        // status をそのまんま渡して向こうで加工する方が疎結合なのでは？
+        obj.GetComponent<Creature>().AppetiteLevel = info.Status.Appetite;
+        obj.GetComponent<Creature>().SpeedLevel = info.Status.Speed;
     }
 
     int GetChildSize(int sizeA, int sizeB)
     {
-        return Mathf.Clamp(((sizeA + sizeB) / 2 + UnityEngine.Random.Range(-3, 4)), 1, 20);
+        return Mathf.Clamp((sizeA + sizeB) / 2 + UnityEngine.Random.Range(-3, 4), 1, 20);
     }
 
     int AveragePlusOne(int a, int b)
