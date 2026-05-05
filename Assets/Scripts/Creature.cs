@@ -49,7 +49,7 @@ public class Creature : MonoBehaviour
 
     void FixedUpdate()
     {
-        timef += Time.deltaTime;
+        timef += Time.fixedDeltaTime;
 
         if (IsWandering())
         {
